@@ -16,6 +16,8 @@ Metacello new
 
 ## Usage
 
+### Basic commands
+
 1. Create a gexf element
     ```st
     gexf := GEXF new.
@@ -27,10 +29,11 @@ Metacello new
     ```
  3. Add nodes
     ```st
+    graph := gexf graph.
     node1 := graph createNodeWithId: '0'.
-	  node1 label: 'Hello'.
-	  node2 := graph createNodeWithId: '2'.
-	  node2 label: 'World'.
+	node1 label: 'Hello'.
+	node2 := graph createNodeWithId: '2'.
+	node2 label: 'World'.
     ```
 4. Connect nodes
     ```st
@@ -43,3 +46,36 @@ Metacello new
 		    prettyPrinting;
 	 	    export: gexf ]
     ```
+
+### Full example to show dependencies of classes from Moose
+
+```st
+classes := ((model allWithSubTypesOf: FamixJavaType)  select: [ :d | d isStub not and: [ d isAnonymousClass not ]  ]).
+
+gexf := GEXF new.
+gexf metadata creator: 'Gephi.org'.
+gexf metadata description: 'my project'.
+
+graph := gexf graph.
+
+dicClassNode := classes collect: [ :class | 
+	| node |
+	node := graph createNode.
+	node label: class mooseName.
+	class -> node
+	 ] as: Dictionary.
+
+dicClassNode keysAndValuesDo: [ :class :node |
+	(class query outgoing dependencies targetsAtScope: FamixTType) do: [ :dep |
+		dicClassNode at: dep ifPresent: [ :aDepNode | node connectTo: aDepNode ]
+		 ] 
+	 ].
+
+
+
+
+'d:/seditRHDep.gexf' asFileReference writeStreamDo:  [:stream |
+    (GEXFWriter on: stream)
+	    prettyPrinting;
+ 	    export: gexf ]
+```
